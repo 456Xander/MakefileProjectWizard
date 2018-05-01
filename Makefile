@@ -35,8 +35,8 @@ CXXFLAGS = $(CFLAGS) -std=c++14
 CFLAGS += -std=c11
 all: directories release
 
-debug: CFLAGS += -O0 -ggdb
-debug: CXXFLAGS += -O0 -ggdb
+debug: CFLAGS += -O0 -ggdb -DDBG
+debug: CXXFLAGS += -O0 -ggdb -DDBG
 debug: $(DEBUG_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
 

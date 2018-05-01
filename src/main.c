@@ -24,6 +24,10 @@ int main(int argc, char **argv) {
 	char *mainFile = argv[0];
 	char *name = argv[1];
 	char *folder = argv[2];
+#ifdef DBG
+	printf("Folder: %s\n", folder);
+	printf("Name: %s\n", name);
+#endif
 	char buffer[PATH_MAX];
 	if ((strlen(mainFile) + strlen(src_mkfile)) > sizeof(buffer)) {
 		fprintf(stderr, "Folder name too long!!!\n");
@@ -52,6 +56,9 @@ int main(int argc, char **argv) {
 	}
 	strcpy(buffer, folder);
 	strcat(buffer, dest_mkfile);
+#ifdef DBG
+	printf("dest: %s\n", buffer);
+#endif
 	// The Dest Makefile
 	FILE *destMakefile = fopen(buffer, "w");
 	if (destMakefile == NULL) {
