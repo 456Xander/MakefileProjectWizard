@@ -22,6 +22,8 @@ RM := rm -rf
 CC := gcc
 CXX := g++
 
+LDFLAGS :=
+
 ifeq ($(SRC_CPP),)
 	LD := $(CC)
 else
@@ -30,19 +32,24 @@ else
 	LD := $(CXX)
 endif
 
-CFLAGS = -Wall -Wextra -MMD -MP -MF $(subst $(subst ./,,$(SRC_DIR)), $(subst ./,,$(DEPDIR)), $(patsubst %.c, %.d, $<))
-CXXFLAGS = $(CFLAGS) -std=c++14
-CFLAGS += -std=c11
-all: directories release
+CCFLAGS = -Wall -Wextra -MMD -MP -MF $(subst $(subst ./,,$(SRC_DIR)), $(subst ./,,$(DEPDIR)), $(patsubst %.c, %.d, $<))
+CXXFLAGS = $(CCFLAGS) -std=c++14
+CFLAGS = $(CCFLAGS) -std=c11
+all: directories debug
 
-debug: CFLAGS += -O0 -ggdb -DDBG
-debug: CXXFLAGS += -O0 -ggdb -DDBG
+debug: CFLAGS += -O0 -ggdb -DDBG -fsanitize=address
+debug: CXXFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: $(DEBUG_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
 
-release: CFLAGS += -O2
-release: CXXFLAGSX += -O2
+release: CFLAGS += -O2 -march=native
+release: CXXFLAGSX += -O2 -march=native
 release: $(RELEASE_EXEC)
+	$(LN) $< ./$(EXEC_NAME)
+
+fast: CFLAGS += -O3 -march=native
+fast: CXXFLAGSX += -O3 -march=native
+fast: $(RELEASE_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
 
 clean:
@@ -51,10 +58,10 @@ clean:
 	$(RM) $(DEPDIR)/*.d
 
 $(DEBUG_EXEC): $(subst $(SRC_DIR), $(DEBUG_DIR), $(OBJS))
-	$(LD) $^ -o $@
+	$(LD) $(LDFLAGS) $^ -o $@
 
 $(RELEASE_EXEC): $(subst $(SRC_DIR), $(RELEASE_DIR), $(OBJS))
-	$(LD) $^ -o $@
+	$(LD) $(LDFLAGS) $^ -o $@
 
 -include $(shell find $(DEPDIR) -name '*.d')
 
