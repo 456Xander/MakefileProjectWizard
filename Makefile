@@ -22,7 +22,7 @@ RM := rm -rf
 CC := gcc
 CXX := g++
 
-LDFLAGS :=
+LDFLAGS := -fsanitize=address
 
 ifeq ($(SRC_CPP),)
 	LD := $(CC)
@@ -39,6 +39,7 @@ all: directories debug
 
 debug: CFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: CXXFLAGS += -O0 -ggdb -DDBG -fsanitize=address
+debug: LDFLAGS += -fsanitize=address
 debug: $(DEBUG_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
 
