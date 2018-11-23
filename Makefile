@@ -22,7 +22,7 @@ RM := rm -rf
 CC := gcc
 CXX := g++
 
-LDFLAGS := -fsanitize=address
+LDFLAGS :=
 
 ifeq ($(SRC_CPP),)
 	LD := $(CC)
