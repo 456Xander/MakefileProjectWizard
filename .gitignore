@@ -2,3 +2,4 @@ Debug/
 Release/
 Depends/
 create-proj
+*.gch

@@ -1,6 +1,6 @@
 #include <errno.h>
-#include <linux/limits.h>
 #include <stdio.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -12,6 +12,9 @@
 
 #define src_mkfile "/Makefile"
 #define dest_mkfile "/Makefile"
+
+//just use 4k max path
+#define PATH_MAX 4096
 
 const char *PROJ_NAME = "EXEC_NAME := create-proj\n";
 int main(int argc, char **argv) {
