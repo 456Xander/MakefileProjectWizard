@@ -1,4 +1,4 @@
-.PHONY: all clean debug release
+.PHONY: all clean debug release pch
 #Name of the Executable file
 EXEC_NAME := create-proj
 SRC_DIR := ./src
@@ -6,7 +6,8 @@ DEBUG_DIR := ./Debug
 RELEASE_DIR := ./Release
 DEPDIR := ./Depends
 OUT_DIR = .
-PRECOMP_H :=
+PRECOMP_H := ./src/pch.h
+PRECOMP_GCH := $(PRECOMP_H).gch
 
 DEBUG_EXEC := $(DEBUG_DIR)/$(EXEC_NAME)
 RELEASE_EXEC := $(RELEASE_DIR)/$(EXEC_NAME)
@@ -14,11 +15,6 @@ RELEASE_EXEC := $(RELEASE_DIR)/$(EXEC_NAME)
 SRC := $(shell find $(SRC_DIR) -name '*.c' -o -name '*.cpp')
 HEADER := $(shell find $(SRC_DIR) -name '*.h')
 OBJS = $(filter %.o, $(SRC:.c=.o) $(SRC:.cpp=.o))
-ifneq ($(strip $(PRECOMP_H)),)
-	OBJS += $(SRC_DIR)/$(PRECOMP_H)
-	$(info "PCH")
-endif
-$(info $(OBJS))
 OBJS_T = $(subst $(SRC_DIR), $(OUT_DIR), $(OBJS))
 
 SRC_CPP := $(filter %.cpp, $(SRC))
@@ -46,23 +42,29 @@ all: directories debug
 debug: CFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: CXXFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: LDFLAGS += -fsanitize=address
-debug: $(DEBUG_EXEC)
+debug: $(PRECOMP_GCH) $(DEBUG_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
 
 release: CFLAGS += -O2 -march=native
 release: CXXFLAGSX += -O2 -march=native
-release: $(RELEASE_EXEC)
+release: $(PRECOMP_GCH) $(RELEASE_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
 
 fast: CFLAGS += -O3 -march=native
 fast: CXXFLAGSX += -O3 -march=native
-fast: $(RELEASE_EXEC)
+fast: pch $(RELEASE_EXEC)
 	$(LN) $< ./$(EXEC_NAME)
+
+%.h.gch: %.h
+	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:
 	$(RM) $(DEBUG_DIR)/*.o
 	$(RM) $(RELEASE_DIR)/*.o
 	$(RM) $(DEPDIR)/*.d
+	$(ifneq $(strip $(PRECOMP_H)),)
+		$(RM) $(PRECOMP_H).gch
+	$(endif)
 
 $(DEBUG_EXEC): $(subst $(SRC_DIR), $(DEBUG_DIR), $(OBJS))
 	$(info $(OBJS))
@@ -86,13 +88,13 @@ $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c
 $(DEBUG_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-$(DEBUG_DIR)/%.gch: $(SRC_DIR)/%.h
-	$(CXX) $(CXXFLAGS) $<
+$(SRC_DIR)/%.h.gch: $(SRC_DIR)/%.h
+	$(CXX) $(CXXFLAGS) $< -o $@
 
 directories: $(DEBUG_DIR) $(RELEASE_DIR) $(DEPDIR)
 
 $(DEBUG_DIR):
-	mkdir -p $(DEBUG_DIR)
+	mkdir -p $(DEBUG_DIR) 
 	
 $(RELEASE_DIR):
 	mkdir -p $(RELEASE_DIR)
