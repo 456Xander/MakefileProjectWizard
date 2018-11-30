@@ -43,12 +43,12 @@ debug: CFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: CXXFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: LDFLAGS += -fsanitize=address
 debug: $(PRECOMP_GCH) $(DEBUG_EXEC)
-	$(LN) $< ./$(EXEC_NAME)
+	$(LN) $(DEBUG_EXEC) ./$(EXEC_NAME)
 
 release: CFLAGS += -O2 -march=native
 release: CXXFLAGSX += -O2 -march=native
 release: $(PRECOMP_GCH) $(RELEASE_EXEC)
-	$(LN) $< ./$(EXEC_NAME)
+	$(LN) $(RELEASE_EXEC) ./$(EXEC_NAME)
 
 fast: CFLAGS += -O3 -march=native
 fast: CXXFLAGSX += -O3 -march=native
