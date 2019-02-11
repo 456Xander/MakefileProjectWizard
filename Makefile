@@ -4,10 +4,12 @@ EXEC_NAME := create-proj
 SRC_DIR := ./src
 DEBUG_DIR := ./Debug
 RELEASE_DIR := ./Release
+
+
 DEPDIR := ./Depends
 OUT_DIR = .
 PRECOMP_H := ./src/pch.h
-PRECOMP_GCH := $(PRECOMP_H).gch
+PRECOMP_GCH := $(subst $(SRC_DIR), $(DEBUG_DIR),$(PRECOMP_H).gch)
 
 DEBUG_EXEC := $(DEBUG_DIR)/$(EXEC_NAME)
 RELEASE_EXEC := $(RELEASE_DIR)/$(EXEC_NAME)
@@ -25,7 +27,8 @@ CC := gcc
 CXX := g++
 
 LDFLAGS :=
-
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
+POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
 ifeq ($(SRC_CPP),)
 	LD := $(CC)
 else
@@ -34,7 +37,7 @@ else
 	LD := $(CXX)
 endif
 
-CCFLAGS = -Wall -Wextra -MMD -MP -MF $(subst $(subst ./,,$(SRC_DIR)), $(subst ./,,$(DEPDIR)), $(patsubst %.c, %.d, $<))
+CCFLAGS = -Wall -Wextra
 CXXFLAGS = $(CCFLAGS) -std=c++14
 CFLAGS = $(CCFLAGS) -std=c11
 all: directories debug
@@ -42,7 +45,7 @@ all: directories debug
 debug: CFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: CXXFLAGS += -O0 -ggdb -DDBG -fsanitize=address
 debug: LDFLAGS += -fsanitize=address
-debug: $(PRECOMP_GCH) $(DEBUG_EXEC)
+debug:  $(PRECOMP_GCH) $(DEBUG_EXEC)
 	$(LN) $(DEBUG_EXEC) ./$(EXEC_NAME)
 
 release: CFLAGS += -O2 -march=native
@@ -52,44 +55,47 @@ release: $(PRECOMP_GCH) $(RELEASE_EXEC)
 
 fast: CFLAGS += -O3 -march=native
 fast: CXXFLAGSX += -O3 -march=native
-fast: pch $(RELEASE_EXEC)
-	$(LN) $< ./$(EXEC_NAME)
-
-%.h.gch: %.h
-	$(CXX) $(CXXFLAGS) $< -o $@
+fast: $(PRECOMP_GCH) $(RELEASE_EXEC)
+	$(LN) $(RELEASE_EXEC) ./$(EXEC_NAME)
 
 clean:
-	$(RM) $(DEBUG_DIR)/*.o
-	$(RM) $(RELEASE_DIR)/*.o
-	$(RM) $(DEPDIR)/*.d
-	$(ifneq $(strip $(PRECOMP_H)),)
-		$(RM) $(PRECOMP_H).gch
-	$(endif)
+	$(RM) $(DEBUG_DIR)/*
+	$(RM) $(RELEASE_DIR)/*
+	$(RM) $(DEPDIR)/*
 
 $(DEBUG_EXEC): $(subst $(SRC_DIR), $(DEBUG_DIR), $(OBJS))
-	$(info $(OBJS))
-	$(info $^)
 	$(LD) $(LDFLAGS) $^ -o $@
 
 $(RELEASE_EXEC): $(subst $(SRC_DIR), $(RELEASE_DIR), $(OBJS))
 	$(LD) $(LDFLAGS) $^ -o $@
 
--include $(shell find $(DEPDIR) -name '*.d')
 
-$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+$(OBJS) : $(PRECOMP_GCH)
 
-$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.c $(DEPDIR)/%.d
+	$(CC) $(DEPFLAGS) $(CFLAGS) -c -o $@ $<
+	$(POSTCOMPILE)
 
-$(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+$(RELEASE_DIR)/%.o: $(SRC_DIR)/%.cpp $(DEPDIR)/%.d
+	$(CXX) $(DEPFLAGS)  $(CXXFLAGS) -c -o $@ $<
+	$(POSTCOMPILE)
 
-$(DEBUG_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+$(DEBUG_DIR)/%.o: $(SRC_DIR)/%.c $(DEPDIR)/%.d
+	$(CC) $(DEPFLAGS)  $(CFLAGS) -c -o $@ $<
+	$(POSTCOMPILE)
 
-$(SRC_DIR)/%.h.gch: $(SRC_DIR)/%.h
-	$(CXX) $(CXXFLAGS) $< -o $@
+$(DEBUG_DIR)/%.o: $(SRC_DIR)/%.cpp $(DEPDIR)/%.d
+	$(CXX) $(DEPFLAGS)  $(CXXFLAGS) -c -o $@ $<
+	$(POSTCOMPILE)
+
+$(DEPDIR)/%.d: ;
+
+.PRECIOUS: $(DEPDIR)/%.d
+
+include $(shell find $(DEPDIR) -name '*.d')
+
+$(PRECOMP_GCH): $(PRECOMP_H)
+	$(CC) $(CFLAGS) $< -o $@
 
 directories: $(DEBUG_DIR) $(RELEASE_DIR) $(DEPDIR)
 
